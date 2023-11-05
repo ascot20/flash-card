@@ -5,29 +5,40 @@ import random
 # constants
 BACKGROUND_COLOR = "#B1DDC6"
 delay = None
+random_word = None
 
 # import csv file
-df = pandas.read_csv('./data/french_words.csv')
-translations = df.to_dict('records')
+try:
+    df = pandas.read_csv('./data/words_to_learn.csv')
+except FileNotFoundError:
+    df = pandas.read_csv('./data/french_words.csv')
+    translations = df.to_dict('records')
+else:
+    translations = df.to_dict('records')
 
 
 # ------------------------Next word mechanism------------------------#
-def change():
-    global delay
+def change(button_clicked):
+    global delay, random_word
+    if delay is not None:
+        window.after_cancel(delay)
+    if button_clicked == 'correct':
+        translations.remove(random_word)
+        new_df = pandas.DataFrame(translations)
+        new_df.to_csv('./data/words_to_learn.csv', index=False)
+
     random_word = random.choice(translations)
     card_canvas.itemconfig(card_image, image=front_card)
     card_canvas.itemconfig(title, text='French', fill='black')
     card_canvas.itemconfig(word, text=random_word['French'], fill='black')
 
-    delay = window.after(3000, flip, random_word)
+    delay = window.after(3000, flip, random_word, button_clicked)
 
 
-def flip(random_word):
+def flip(rand_word, button_clicked):
     card_canvas.itemconfig(card_image, image=back_card)
     card_canvas.itemconfig(title, text='English', fill='white')
-    card_canvas.itemconfig(word, text=random_word['English'], fill='white')
-
-    window.after_cancel(delay)
+    card_canvas.itemconfig(word, text=rand_word['English'], fill='white')
 
 
 # ------------------------UI------------------------#
@@ -48,13 +59,13 @@ card_canvas.grid(column=0, row=0, columnspan=2)
 
 # buttons
 correct_image = tkinter.PhotoImage(file='./images/new_right.png')
-correct_button = tkinter.Button(image=correct_image, command=change)
+correct_button = tkinter.Button(image=correct_image, command=lambda: change('correct'))
 correct_button.grid(column=1, row=1)
 
 wrong_image = tkinter.PhotoImage(file='./images/new_wrong.png')
-wrong_button = tkinter.Button(image=wrong_image, command=change)
+wrong_button = tkinter.Button(image=wrong_image, command=lambda: change('wrong'))
 wrong_button.grid(column=0, row=1)
 
-change()
+change("None")
 
 window.mainloop()
